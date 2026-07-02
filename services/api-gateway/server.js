@@ -20,14 +20,7 @@ app.use(cors());
 app.use(morgan("dev"));
 app.use(express.json());
 
-async function request(serviceUrl, path, options = {}) {
-  const response = await axios({
-    url: `${serviceUrl}${path}`,
-    timeout: 4000,
-    validateStatus: () => true,
-    ...options
-  });
-
+function unwrapServiceResponse(response, path) {
   if (response.status >= 400) {
     const error = new Error(response.data?.error || `REST call failed: ${path}`);
     error.statusCode = response.status;
@@ -44,7 +37,11 @@ app.get("/health", (_req, res) => {
 
 app.get("/travelers", async (_req, res, next) => {
   try {
-    res.json(await request(services.travelers, "/travelers"));
+    const travelersResponse = await axios.get(`${services.travelers}/travelers`, {
+      timeout: 4000,
+      validateStatus: () => true
+    });
+    res.json(unwrapServiceResponse(travelersResponse, "/travelers"));
   } catch (error) {
     next(error);
   }
@@ -52,7 +49,11 @@ app.get("/travelers", async (_req, res, next) => {
 
 app.get("/itineraries/:id", async (req, res, next) => {
   try {
-    res.json(await request(services.itineraries, `/itineraries/${req.params.id}`));
+    const itineraryResponse = await axios.get(`${services.itineraries}/itineraries/${req.params.id}`, {
+      timeout: 4000,
+      validateStatus: () => true
+    });
+    res.json(unwrapServiceResponse(itineraryResponse, "/itineraries/{id}"));
   } catch (error) {
     next(error);
   }
@@ -60,34 +61,54 @@ app.get("/itineraries/:id", async (req, res, next) => {
 
 app.post("/trip-bookings", async (req, res, next) => {
   try {
-    const traveler = await request(services.travelers, `/travelers/${req.body.travelerId}`);
-    const reservation = await request(services.reservations, "/reservations", {
-      method: "POST",
-      data: {
+    const travelerResponse = await axios.get(`${services.travelers}/travelers/${req.body.travelerId}`, {
+      timeout: 4000,
+      validateStatus: () => true
+    });
+    const traveler = unwrapServiceResponse(travelerResponse, "/travelers/{id}");
+
+    const reservationResponse = await axios.post(
+      `${services.reservations}/reservations`,
+      {
         travelerId: traveler.traveler.id,
         packageId: req.body.packageId,
         paymentMethod: req.body.paymentMethod || "card"
+      },
+      {
+        timeout: 4000,
+        validateStatus: () => true
       }
-    });
+    );
+    const reservation = unwrapServiceResponse(reservationResponse, "/reservations");
 
-    const itinerary = await request(services.itineraries, "/itineraries", {
-      method: "POST",
-      data: {
+    const itineraryResponse = await axios.post(
+      `${services.itineraries}/itineraries`,
+      {
         travelerId: traveler.traveler.id,
         reservationId: reservation.reservation.id,
         packageId: req.body.packageId,
         notes: req.body.notes || "Booked through booking-api-gateway"
+      },
+      {
+        timeout: 4000,
+        validateStatus: () => true
       }
-    });
+    );
+    const itinerary = unwrapServiceResponse(itineraryResponse, "/itineraries");
 
-    const ticket = await request(services.fulfillment, "/fulfillment/issue-ticket", {
-      method: "POST",
-      data: {
+    const ticketResponse = await axios.post(
+      `${services.fulfillment}/fulfillment/issue-ticket`,
+      {
         reservationId: reservation.reservation.id,
         itineraryId: itinerary.itinerary.id,
         travelerEmail: traveler.traveler.email
+      },
+      {
+        timeout: 4000,
+        validateStatus: () => true
       }
-    });
+    );
+    const ticket = unwrapServiceResponse(ticketResponse, "/fulfillment/issue-ticket");
 
     res.status(201).json({ traveler: traveler.traveler, reservation: reservation.reservation, itinerary: itinerary.itinerary, ticket });
   } catch (error) {
@@ -102,4 +123,3 @@ app.use((error, _req, res, _next) => {
 app.listen(port, () => {
   console.log(`${serviceName} listening on ${port}`);
 });
-

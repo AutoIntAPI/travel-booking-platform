@@ -4,6 +4,8 @@ Customer-facing travel booking system implemented as a microservices architectur
 
 This repository is designed to work with the sibling `travel-operations-platform` repository. Services communicate only through RESTful APIs, including cross-repository calls.
 
+Outbound dependencies are written as direct `axios.get`, `axios.post`, `requests.get`, or `requests.post` calls so static dependency mapping tools can extract them reliably.
+
 ## Services
 
 | Service | Language | Port | Responsibility |
@@ -61,4 +63,3 @@ curl http://localhost:5202/health
 curl http://localhost:5203/health
 curl http://localhost:5204/health
 ```
-

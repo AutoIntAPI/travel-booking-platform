@@ -15,13 +15,6 @@ RESERVATION_SERVICE_URL = os.getenv("RESERVATION_SERVICE_URL", "http://localhost
 itineraries = []
 
 
-def get_json(url):
-    response = requests.get(url, timeout=3)
-    if response.status_code >= 400:
-        return None, response
-    return response.json(), response
-
-
 @app.get("/health")
 def health():
     return jsonify({
@@ -40,9 +33,9 @@ def list_itineraries():
     return jsonify({"itineraries": itineraries})
 
 
-@app.get("/itineraries/<itinerary_id>")
-def get_itinerary(itinerary_id):
-    itinerary = next((item for item in itineraries if item["id"] == itinerary_id), None)
+@app.get("/itineraries/<id>")
+def get_itinerary(id):
+    itinerary = next((item for item in itineraries if item["id"] == id), None)
     if not itinerary:
         return jsonify({"error": "Itinerary not found"}), 404
     return jsonify({"itinerary": itinerary})
@@ -57,13 +50,15 @@ def create_itinerary():
     if not traveler_id or not reservation_id:
         return jsonify({"error": "travelerId and reservationId are required"}), 400
 
-    traveler_data, traveler_response = get_json(f"{TRAVELER_SERVICE_URL}/travelers/{traveler_id}")
+    traveler_response = requests.get(f"{TRAVELER_SERVICE_URL}/travelers/{traveler_id}", timeout=3)
     if traveler_response.status_code >= 400:
         return jsonify({"error": "Traveler could not be verified"}), 400
+    traveler_data = traveler_response.json()
 
-    reservation_data, reservation_response = get_json(f"{RESERVATION_SERVICE_URL}/reservations/{reservation_id}")
+    reservation_response = requests.get(f"{RESERVATION_SERVICE_URL}/reservations/{reservation_id}", timeout=3)
     if reservation_response.status_code >= 400:
         return jsonify({"error": "Reservation could not be verified"}), 400
+    reservation_data = reservation_response.json()
 
     itinerary = {
         "id": f"itinerary-{len(itineraries) + 1}",
@@ -81,4 +76,3 @@ def create_itinerary():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
-
