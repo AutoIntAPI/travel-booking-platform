@@ -42,6 +42,7 @@ def create_notification():
     ticket_id = payload.get("ticketId")
     sender_id = payload.get("senderId")
 
+
     if not recipient or not message_content or not sender_id:
         return jsonify({"error": "recipient and message_content are required"}), 400
 
