@@ -47,7 +47,7 @@ def create_notification():
         return jsonify({"error": "recipient and message_content are required"}), 400
 
     if itinerary_id:
-        response = requests.get(f"{ITINERARY_SERVICE_URL}/itineraries/{itinerary_id}", timeout=3)
+        response = requests.post(f"{ITINERARY_SERVICE_URL}/itineraries/{itinerary_id}", timeout=3)
         if response.status_code >= 400:
             return jsonify({"error": "Referenced itinerary was not found"}), 400
 
