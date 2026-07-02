@@ -33,16 +33,18 @@ def list_notifications():
     return jsonify({"notifications": notifications})
 
 
-@app.post("/notifications")
+@app.put("/notifications")
 def create_notification():
     payload = request.get_json(force=True)
     recipient = payload.get("recipient")
-    message = payload.get("message")
+    message_content = payload.get("message_content")
     itinerary_id = payload.get("itineraryId")
     ticket_id = payload.get("ticketId")
+    sender_id = payload.get("senderId")
 
-    if not recipient or not message:
-        return jsonify({"error": "recipient and message are required"}), 400
+
+    if not recipient or not message_content or not sender_id:
+        return jsonify({"error": "recipient and message_content are required"}), 400
 
     if itinerary_id:
         response = requests.get(f"{ITINERARY_SERVICE_URL}/itineraries/{itinerary_id}", timeout=3)
@@ -57,7 +59,7 @@ def create_notification():
     notification = {
         "id": f"notification-{len(notifications) + 1}",
         "recipient": recipient,
-        "message": message,
+        "message_content": message_content,
         "itineraryId": itinerary_id,
         "ticketId": ticket_id,
         "channel": payload.get("channel", "email"),

@@ -33,7 +33,7 @@ def list_itineraries():
     return jsonify({"itineraries": itineraries})
 
 
-@app.get("/itineraries/<id>")
+@app.post("/itineraries/<id>")
 def get_itinerary(id):
     itinerary = next((item for item in itineraries if item["id"] == id), None)
     if not itinerary:
