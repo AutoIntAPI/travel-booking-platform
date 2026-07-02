@@ -1,0 +1,77 @@
+services:
+  api-gateway:
+    build:
+      context: .
+      dockerfile: services/api-gateway/Dockerfile
+    ports:
+      - "5200:5200"
+    environment:
+      PORT: 5200
+      TRAVELER_SERVICE_URL: http://traveler-service:5201
+      ITINERARY_SERVICE_URL: http://itinerary-service:5202
+      NOTIFICATION_SERVICE_URL: http://notification-service:5203
+      LOYALTY_SERVICE_URL: http://loyalty-service:5204
+      RESERVATION_SERVICE_URL: http://host.docker.internal:5302
+      FULFILLMENT_SERVICE_URL: http://host.docker.internal:5304
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - traveler-service
+      - itinerary-service
+      - notification-service
+      - loyalty-service
+
+  traveler-service:
+    build:
+      context: .
+      dockerfile: services/traveler-service/Dockerfile
+    ports:
+      - "5201:5201"
+    environment:
+      PORT: 5201
+      LOYALTY_SERVICE_URL: http://loyalty-service:5204
+    depends_on:
+      - loyalty-service
+
+  itinerary-service:
+    build:
+      context: .
+      dockerfile: services/itinerary-service/Dockerfile
+    ports:
+      - "5202:5202"
+    environment:
+      PORT: 5202
+      TRAVELER_SERVICE_URL: http://traveler-service:5201
+      RESERVATION_SERVICE_URL: http://host.docker.internal:5302
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - traveler-service
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification-service/Dockerfile
+    ports:
+      - "5203:5203"
+    environment:
+      PORT: 5203
+      ITINERARY_SERVICE_URL: http://itinerary-service:5202
+      FULFILLMENT_SERVICE_URL: http://host.docker.internal:5304
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - itinerary-service
+
+  loyalty-service:
+    build:
+      context: .
+      dockerfile: services/loyalty-service/Dockerfile
+    ports:
+      - "5204:5204"
+    environment:
+      PORT: 5204
+      PAYMENT_SERVICE_URL: http://host.docker.internal:5303
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
